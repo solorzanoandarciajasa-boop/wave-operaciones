@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Agendas y Reportes Operacionales</title>
+  <meta name="description" content="Plataforma interna para gestión de agendas diarias y reportes operacionales de coordinaciones." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-block">
+        <div class="logo-icon">
+          <svg width="44" height="38" viewBox="0 0 44 38" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="wg1" x1="0" y1="0" x2="44" y2="38" gradientUnits="userSpaceOnUse">
+                <stop offset="0%"   stop-color="#5B21B6"/>
+                <stop offset="55%"  stop-color="#9333EA"/>
+                <stop offset="100%" stop-color="#C026D3"/>
+              </linearGradient>
+            </defs>
+            <!-- Left pill (dark purple, tilted) -->
+            <ellipse cx="11" cy="13" rx="8" ry="12.5" fill="#5B21B6" transform="rotate(-12 11 13)"/>
+            <!-- Right circle (magenta) -->
+            <circle cx="34" cy="11" r="9.5" fill="#C026D3"/>
+            <!-- Center W valley connecting both sides -->
+            <path d="M5 37 Q13 13 22 26 Q31 13 39 23" stroke="url(#wg1)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="brand">WAVE</span>
+          <span class="brand-sub">Gestión Operacional</span>
+        </div>
+      </div>
+      <div class="header-meta">
+        <div class="clock-block"><span>🕐</span><span id="liveClock"></span></div>
+        <div class="date-badge" id="headerDate"></div>
+        <div class="sync-status" id="syncStatus">⚡ Conectando...</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN -->
+  <!-- SYNC PANEL -->
+  <div class="sync-bar">
+    <div class="sync-bar-title">📡 Envíos de Coordinadores — Tiempo Real</div>
+    <div id="syncList" class="sync-list">
+      <p class="sync-empty">Sin envíos hoy. Los módulos móviles aparecerán aquí automáticamente.</p>
+    </div>
+  </div>
+
+  <main class="main-layout">
+
+    <!-- PANEL IZQUIERDO: INGRESO -->
+    <section class="panel panel-input">
+      <div class="panel-title"><span class="panel-icon">✏️</span>Ingreso de Información</div>
+
+      <div class="mode-toggle">
+        <button class="mode-btn active" id="btnAgenda" onclick="setMode('agenda')"><span>📋</span> Agenda</button>
+        <button class="mode-btn" id="btnReporte" onclick="setMode('reporte')"><span>📊</span> Reporte</button>
+      </div>
+
+      <div class="mode-info" id="modeInfo"></div>
+
+      <div class="form-group">
+        <label class="form-label"><span class="label-icon">👤</span> Coordinación</label>
+        <div class="select-wrapper">
+          <select id="coordSelect" class="form-select">
+            <option value="">— Seleccionar coordinación —</option>
+            <option value="soporte">COORD SOPORTE NIVEL 1 · Alejandro Gómez</option>
+            <option value="ampliacion">COORD AMPLIACIÓN (INFRAESTRUCTURA) · José Marval</option>
+            <option value="construccion">COORD CONSTRUCCIÓN · Francisco Silva</option>
+            <option value="instalaciones">COORD INSTALACIONES / SOPORTE PIMES · Miguel Rojas</option>
+            <option value="servicios">COORD SERVICIOS GENERALES · Roberto Gómez</option>
+          </select>
+          <span class="select-arrow">▾</span>
+        </div>
+      </div>
+
+      <div id="dynamicFields" class="dynamic-fields hidden">
+
+        <div id="agendaFields">
+          <div class="form-group">
+            <label class="form-label"><span class="label-icon">📝</span> Casos a atender el día siguiente</label>
+            <textarea id="agendaCasos" class="form-textarea" rows="6"
+              placeholder="Ej: Ticket #1234 – Cliente Jesús Rodríguez, sector Catia. Falla de señal óptica desde ayer. Requiere visita técnica con empalme..."></textarea>
+          </div>
+        </div>
+
+        <div id="reporteFields" class="hidden">
+          <div class="form-group">
+            <label class="form-label"><span class="label-icon">✅</span> Casos atendidos exitosamente</label>
+            <textarea id="reporteExito" class="form-textarea" rows="5"
+              placeholder="Ej: Ticket #1230 – Se realizó empalme óptico en sector Los Palos Grandes. Cliente activo al 100%..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><span class="label-icon">⚠️</span> Casos no atendidos y motivo</label>
+            <textarea id="reportePendiente" class="form-textarea" rows="4"
+              placeholder="Ej: Ticket #1231 – No se pudo atender por falta de conector SC/APC. Reprogramado para mañana..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label"><span class="label-icon">📎</span> Adjuntar archivos (Fotos / Excel)</label>
+          <div class="file-drop-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+            <div class="drop-icon">☁️</div>
+            <p class="drop-text">Arrastra archivos aquí o <span class="drop-link">haz clic para seleccionar</span></p>
+            <p class="drop-hint">JPG · PNG · XLS · XLSX</p>
+            <input type="file" id="fileInput" multiple accept=".jpg,.jpeg,.png,.xls,.xlsx" style="display:none" onchange="handleFiles(this.files)" />
+          </div>
+          <div id="filePreview" class="file-preview"></div>
+        </div>
+
+        <button class="btn-add" onclick="addEntry()"><span>➕</span> Agregar al reporte</button>
+      </div>
+    </section>
+
+    <!-- PANEL DERECHO: VISTA PREVIA -->
+    <section class="panel panel-output">
+      <div class="panel-title">
+        <span class="panel-icon">👁️</span>Vista Previa
+        <div class="panel-actions">
+          <button class="btn-clear" onclick="clearAll()">🗑️ Limpiar</button>
+        </div>
+      </div>
+
+      <div id="entryList" class="entry-list">
+        <div class="empty-state">
+          <div class="empty-icon">📄</div>
+          <p>Aún no se han agregado entradas.<br/>Selecciona una coordinación e ingresa la información.</p>
+        </div>
+      </div>
+
+      <div class="generate-bar">
+        <button class="btn-generate" onclick="generateReport()"><span>⚡</span> Generar Documento Final</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- LIGHTBOX -->
+  <div id="lightbox" class="lightbox hidden" onclick="closeLightbox()">
+    <div class="lightbox-inner">
+      <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+      <img id="lightboxImg" src="" alt="Imagen adjunta" />
+    </div>
+  </div>
+
+  <!-- OUTPUT MODAL -->
+  <div id="outputModal" class="modal hidden">
+    <div class="modal-backdrop" onclick="closeModal()"></div>
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="modalTitle">📄 Documento Generado</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-copy" onclick="copyToClipboard()">📋 Copiar para WhatsApp</button>
+        <button class="btn-download" onclick="downloadTxt()">⬇️ Descargar .txt</button>
+      </div>
+      <!-- Galería de imágenes adjuntas -->
+      <div id="modalGallery" class="modal-gallery hidden"></div>
+      <!-- Texto editable -->
+      <textarea id="outputBody" class="output-body" spellcheck="false"></textarea>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

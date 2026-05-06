@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="theme-color" content="#0D0818"/>
+  <title>WAVE · Módulo Coordinador</title>
+  <meta name="description" content="Módulo móvil para envío de agenda y reporte de coordinación WAVE."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="coord-style.css"/>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="c-header">
+    <div class="c-logo">
+      <svg width="32" height="28" viewBox="0 0 44 38" fill="none">
+        <defs>
+          <linearGradient id="cg" x1="0" y1="0" x2="44" y2="38" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#5B21B6"/>
+            <stop offset="55%" stop-color="#9333EA"/>
+            <stop offset="100%" stop-color="#C026D3"/>
+          </linearGradient>
+        </defs>
+        <ellipse cx="11" cy="13" rx="8" ry="12.5" fill="#5B21B6" transform="rotate(-12 11 13)"/>
+        <circle cx="34" cy="11" r="9.5" fill="#C026D3"/>
+        <path d="M5 37 Q13 13 22 26 Q31 13 39 23" stroke="url(#cg)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+      </svg>
+      <span class="c-brand">WAVE</span>
+    </div>
+    <div class="c-status" id="connStatus">⚡ Conectando...</div>
+  </header>
+
+  <!-- COORD INFO BANNER -->
+  <div class="coord-banner" id="coordBanner">
+    <div class="coord-emoji" id="coordEmoji">👤</div>
+    <div class="coord-info">
+      <div class="coord-label-text" id="coordLabelText">Cargando...</div>
+      <div class="coord-person"    id="coordPerson"></div>
+    </div>
+    <div class="date-pill" id="datePill"></div>
+  </div>
+
+  <!-- MAIN FORM -->
+  <main class="c-main">
+
+    <!-- MODE SWITCH -->
+    <div class="c-mode-row">
+      <button class="c-mode-btn active" id="cBtnAgenda"  onclick="cSetMode('agenda')">📋 Agenda</button>
+      <button class="c-mode-btn"        id="cBtnReporte" onclick="cSetMode('reporte')">📊 Reporte</button>
+    </div>
+
+    <div class="c-mode-hint" id="cModeHint"></div>
+
+    <!-- AGENDA FIELDS -->
+    <div id="cAgendaFields">
+      <label class="c-label">📌 Casos y actividades para mañana</label>
+      <textarea id="cCasos" class="c-textarea" rows="7"
+        placeholder="Describe cada caso en una línea separada&#10;Ej: Ticket #1234 – Cliente Pérez, sector Centro. Falla en ONT, requiere visita..."></textarea>
+    </div>
+
+    <!-- REPORTE FIELDS -->
+    <div id="cReporteFields" class="hidden">
+      <label class="c-label">✅ Casos atendidos exitosamente</label>
+      <textarea id="cExito" class="c-textarea" rows="5"
+        placeholder="Describe los casos resueltos hoy..."></textarea>
+
+      <label class="c-label" style="margin-top:1rem">⚠️ Casos no atendidos y motivo</label>
+      <textarea id="cPendiente" class="c-textarea" rows="4"
+        placeholder="Casos que quedaron pendientes y por qué..."></textarea>
+    </div>
+
+    <!-- FILE UPLOAD -->
+    <div class="c-section">
+      <label class="c-label">📎 Adjuntar evidencias (Fotos / Excel)</label>
+      <div class="c-drop" id="cDrop" onclick="document.getElementById('cFileInput').click()">
+        <span style="font-size:1.8rem">📷</span>
+        <p>Toca para adjuntar foto o archivo</p>
+        <p class="c-drop-hint">JPG · PNG · XLS · XLSX</p>
+        <input type="file" id="cFileInput" multiple accept=".jpg,.jpeg,.png,.xls,.xlsx"
+          style="display:none" onchange="cHandleFiles(this.files)"/>
+      </div>
+      <div id="cFilePreview" class="c-file-grid"></div>
+    </div>
+
+    <!-- SEND BUTTON -->
+    <button class="c-btn-send" id="cBtnSend" onclick="cEnviar()">
+      <span id="cBtnIcon">📤</span>
+      <span id="cBtnText">Enviar al módulo central</span>
+    </button>
+
+    <!-- HISTORIAL -->
+    <div class="c-section" id="historialSection">
+      <div class="c-section-title">📋 Mis envíos de hoy</div>
+      <div id="historialList" class="historial-list">
+        <p class="c-empty">Sin envíos registrados hoy.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- LIGHTBOX -->
+  <div id="cLightbox" class="c-lightbox hidden" onclick="cCloseLb()">
+    <img id="cLbImg" src="" alt=""/>
+    <button class="c-lb-close" onclick="cCloseLb()">✕</button>
+  </div>
+
+  <!-- TOAST -->
+  <div id="cToast" class="c-toast hidden"></div>
+
+  <script src="supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="coord-app.js"></script>
+</body>
+</html>
