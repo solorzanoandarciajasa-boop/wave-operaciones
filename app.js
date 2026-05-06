@@ -488,8 +488,8 @@ function showToast(msg, type='') {
 // MÓDULO DE SINCRONIZACIÓN – Supabase Realtime
 // ══════════════════════════════════════════════
 async function initSync() {
-  const syncPanel = document.getElementById('syncPanel');
-  if (!syncPanel) return; // panel no montado aún
+  const syncPanel = document.getElementById('syncList');
+  if (!syncPanel) return;
 
   try {
     const { createClient } = supabase;
