@@ -554,21 +554,24 @@ function renderSyncPanel(data) {
   });
 
   list.innerHTML = Object.entries(grouped).map(([key, rows]) => {
-    const coord   = COORDS[key] || { label: key, name: '', emoji: '📌', cssClass: '' };
-    const agendas = rows.filter(r => r.modo === 'agenda');
-    const reportes= rows.filter(r => r.modo === 'reporte');
-    const lastAt  = new Date(rows[0].enviado_en).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'});
+    const coord    = COORDS[key] || { label: key, name: '', emoji: '📌', cssClass: '' };
+    const agendas  = rows.filter(r => r.modo === 'agenda');
+    const reportes = rows.filter(r => r.modo === 'reporte');
+    const lastAt   = new Date(rows[0].enviado_en).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'});
+    const ids      = rows.map(r => `'${r.id}'`).join(',');
 
-    // Thumbnails de imágenes
     const allImages = rows.flatMap(r => (r.archivos||[]).filter(a=>a.esImagen && a.preview));
     const thumbHtml = allImages.slice(0,4).map(a =>
       `<img src="${a.preview}" class="sync-thumb" onclick="openLightbox('${a.preview}')" title="${a.nombre}"/>`
     ).join('');
 
-    return `<div class="sync-card">
+    return `<div class="sync-card" id="sync-card-${key}">
       <div class="sync-card-header">
         <span class="sync-coord ${coord.cssClass}">${coord.emoji} ${coord.label}</span>
-        <span class="sync-time">🕐 ${lastAt}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="sync-time">🕐 ${lastAt}</span>
+          <button class="btn-sync-del" title="Eliminar envíos de esta coordinación" onclick="clearSyncEntry('${key}',[${ids}])">🗑</button>
+        </div>
       </div>
       <div class="sync-badges">
         ${agendas.length  ? `<span class="sync-badge badge-agenda">📋 ${agendas.length} agenda(s)</span>` : ''}
@@ -578,6 +581,104 @@ function renderSyncPanel(data) {
     </div>`;
   }).join('');
 }
+
+// ── ELIMINAR UNA COORDINACIÓN DEL PANEL ────────
+async function clearSyncEntry(coordKey, ids) {
+  if (!state.db) { showToast('⚠️ Sin conexión', 'error'); return; }
+  if (!confirm(`¿Eliminar todos los envíos de ${COORDS[coordKey]?.label || coordKey} de hoy?`)) return;
+  const { error } = await state.db.from('envios').delete().in('id', ids);
+  if (error) { showToast('⛔ Error al eliminar: ' + error.message, 'error'); return; }
+  document.getElementById(`sync-card-${coordKey}`)?.remove();
+  state.remoteEntries = state.remoteEntries.filter(r => !ids.includes(`'${r.id}'`));
+  if (!document.querySelector('.sync-card')) {
+    document.getElementById('syncList').innerHTML = `<p class="sync-empty">Sin envíos de coordinadores hoy.</p>`;
+  }
+  showToast('🗑 Entradas eliminadas', 'success');
+}
+
+// ── LIMPIAR TODO EL PANEL DE HOY ───────────────
+async function clearAllSync() {
+  if (!state.db) { showToast('⚠️ Sin conexión', 'error'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  if (!confirm(`¿Eliminar TODOS los envíos de coordinadores de hoy (${today})?`)) return;
+  const { error } = await state.db.from('envios').delete().eq('fecha', today);
+  if (error) { showToast('⛔ Error: ' + error.message, 'error'); return; }
+  state.remoteEntries = [];
+  document.getElementById('syncList').innerHTML = `<p class="sync-empty">Sin envíos de coordinadores hoy.</p>`;
+  showToast('✅ Panel limpiado', 'success');
+}
+
+// ── HISTORIAL CON BUSCADOR POR FECHA ───────────
+async function searchHistory() {
+  if (!state.db) { showToast('⚠️ Sin conexión a la base de datos', 'error'); return; }
+  const dateVal  = document.getElementById('historyDate').value;
+  const coordVal = document.getElementById('historyCoord').value;
+  const results  = document.getElementById('historyResults');
+
+  if (!dateVal) { results.innerHTML = `<p class="history-empty">⚠️ Selecciona una fecha primero.</p>`; return; }
+
+  results.innerHTML = `<p class="history-empty">⏳ Buscando...</p>`;
+
+  let q = state.db.from('envios').select('*').eq('fecha', dateVal).order('enviado_en', { ascending: true });
+  if (coordVal) q = q.eq('coord_key', coordVal);
+  const { data, error } = await q;
+
+  if (error) { results.innerHTML = `<p class="history-empty">⛔ Error: ${error.message}</p>`; return; }
+  renderHistory(data, dateVal);
+}
+
+function renderHistory(data, dateLabel) {
+  const results = document.getElementById('historyResults');
+  if (!data || !data.length) {
+    results.innerHTML = `<p class="history-empty">📭 Sin registros para ${dateLabel}.</p>`;
+    return;
+  }
+
+  const DAYS   = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const d = new Date(dateLabel + 'T12:00:00');
+  const dateFormatted = `${DAYS[d.getDay()]}, ${d.getDate()} de ${MONTHS[d.getMonth()]} de ${d.getFullYear()}`;
+
+  // Resumen por coordinación
+  const grouped = {};
+  data.forEach(r => { if (!grouped[r.coord_key]) grouped[r.coord_key] = []; grouped[r.coord_key].push(r); });
+
+  const summary = Object.keys(grouped).map(k => {
+    const coord = COORDS[k] || { label: k, emoji: '📌' };
+    return `<span class="hist-summary-chip">${coord.emoji} ${coord.label.split(' ').slice(1,3).join(' ')}: ${grouped[k].length} env.</span>`;
+  }).join('');
+
+  const cards = data.map(row => {
+    const coord   = COORDS[row.coord_key] || { label: row.coord_key, cssClass: '', emoji: '📌' };
+    const time    = new Date(row.enviado_en).toLocaleTimeString('es-VE', {hour:'2-digit', minute:'2-digit'});
+    const content = row.modo === 'agenda' ? row.casos : `✅ ${row.exito||''}${row.pendiente ? '\n⚠️ '+row.pendiente : ''}`;
+    const archivos = (row.archivos||[]);
+    const thumbs  = archivos.filter(a=>a.esImagen&&a.preview)
+      .map(a=>`<img src="${a.preview}" class="hist-thumb" onclick="openLightbox('${a.preview}')" title="${a.nombre}"/>`)
+      .join('');
+    const fileNote = archivos.length ? `<div class="hist-files">📎 ${archivos.map(a=>a.nombre).join(' · ')}</div>` : '';
+
+    return `<div class="hist-card">
+      <div class="hist-card-header">
+        <span class="hist-coord ${coord.cssClass}">${coord.emoji} ${coord.label}</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="hist-badge hist-badge-${row.modo}">${row.modo === 'agenda' ? '📋 AGENDA' : '📊 REPORTE'}</span>
+          <span class="hist-time">🕐 ${time}</span>
+        </div>
+      </div>
+      <pre class="hist-content">${escHtml(content||'')}</pre>
+      ${thumbs ? `<div class="hist-thumbs">${thumbs}</div>` : ''}
+      ${fileNote}
+    </div>`;
+  }).join('');
+
+  results.innerHTML = `
+    <div class="hist-date-label">📅 ${dateFormatted} — ${data.length} registro(s)</div>
+    <div class="hist-summary">${summary}</div>
+    <div class="hist-cards">${cards}</div>`;
+}
+
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
 // Incluye las entradas remotas al generar el documento final
 function mergeRemoteToEntries() {
@@ -604,10 +705,8 @@ function mergeRemoteToEntries() {
 const _originalGenerate = generateReport;
 window.generateReport = function() {
   const remote = mergeRemoteToEntries();
-  // Combinar con locales (evitar duplicados por coord+mode del mismo día)
   const localKeys = new Set(state.entries.map(e => `${e.coord}-${e.mode}`));
   remote.forEach(r => { if (!localKeys.has(`${r.coord}-${r.mode}`)) state.entries.push(r); });
   _originalGenerate();
-  // Limpiar los remotos que se añadieron para no duplicar la próxima vez
   state.entries = state.entries.filter(e => !String(e.id).startsWith('r-'));
 };

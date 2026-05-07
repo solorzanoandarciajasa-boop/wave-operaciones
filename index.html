@@ -53,7 +53,10 @@
   <!-- MAIN -->
   <!-- SYNC PANEL -->
   <div class="sync-bar">
-    <div class="sync-bar-title">📡 Envíos de Coordinadores — Tiempo Real</div>
+    <div class="sync-bar-header">
+      <div class="sync-bar-title">📡 Envíos de Coordinadores — Tiempo Real</div>
+      <button class="btn-sync-clear-all" onclick="clearAllSync()">🗑 Limpiar todo</button>
+    </div>
     <div id="syncList" class="sync-list">
       <p class="sync-empty">Sin envíos hoy. Los módulos móviles aparecerán aquí automáticamente.</p>
     </div>
@@ -146,6 +149,30 @@
       </div>
     </section>
   </main>
+
+  <!-- HISTORIAL -->
+  <section class="history-section">
+    <div class="history-header">
+      <div class="history-title">📅 Historial de Envíos</div>
+      <div class="history-controls">
+        <div class="history-filters">
+          <input type="date" id="historyDate" class="history-date-input"/>
+          <select id="historyCoord" class="history-coord-select">
+            <option value="">Todas las coordinaciones</option>
+            <option value="soporte">COORD SOPORTE NIVEL 1</option>
+            <option value="ampliacion">COORD AMPLIACIÓN</option>
+            <option value="construccion">COORD CONSTRUCCIÓN</option>
+            <option value="instalaciones">COORD INSTALACIONES / PIMES</option>
+            <option value="servicios">COORD SERVICIOS GENERALES</option>
+          </select>
+        </div>
+        <button class="btn-history-search" onclick="searchHistory()">🔍 Buscar</button>
+      </div>
+    </div>
+    <div id="historyResults" class="history-results">
+      <p class="history-empty">Selecciona una fecha y presiona Buscar para ver el historial.</p>
+    </div>
+  </section>
 
   <!-- LIGHTBOX -->
   <div id="lightbox" class="lightbox hidden" onclick="closeLightbox()">
