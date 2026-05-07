@@ -192,3 +192,28 @@ body {
 
 .hidden { display: none !important; }
 .c-empty { font-size: 0.82rem; color: var(--txt3); text-align: center; padding: 16px 0; }
+
+/* TIP BOX */
+.c-tip {
+  font-size: 0.78rem; color: var(--txt2); line-height: 1.55;
+  background: rgba(147,51,234,0.06); border-left: 3px solid var(--a1);
+  border-radius: 0 var(--r2) var(--r2) 0; padding: 9px 13px;
+}
+.c-tip strong { color: var(--a1); }
+
+/* SEND HINT (shows what will be sent) */
+.c-send-hint {
+  font-size: 0.78rem; color: var(--txt2); text-align: center;
+  padding: 6px 0; font-weight: 600; transition: color 0.2s ease;
+}
+
+/* TAB CHECK INDICATOR */
+.tab-check {
+  display: inline-block; background: var(--ok); color: #000;
+  border-radius: 50%; width: 14px; height: 14px; font-size: 0.55rem;
+  line-height: 14px; text-align: center; font-weight: 900;
+  margin-left: 4px; vertical-align: middle;
+}
+
+/* COORD GPS */
+.coord-gps { background: rgba(56,189,248,0.12); color: #38BDF8; border: 1px solid rgba(56,189,248,0.3); }

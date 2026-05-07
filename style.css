@@ -199,6 +199,17 @@ body { font-family: var(--font); background: var(--bg-deep); color: var(--text-p
 .coord-construccion { background: rgba(255,179,0,0.12);   color: #FFB300; border: 1px solid rgba(255,179,0,0.3); }
 .coord-instalaciones{ background: rgba(0,230,118,0.12);   color: #00E676; border: 1px solid rgba(0,230,118,0.3); }
 .coord-servicios    { background: rgba(249,115,122,0.12); color: #F9737A; border: 1px solid rgba(249,115,122,0.3); }
+.coord-gps          { background: rgba(56,189,248,0.12);  color: #38BDF8; border: 1px solid rgba(56,189,248,0.3); }
+
+/* DASHBOARD BUTTON */
+.btn-dashboard {
+  padding: 6px 16px; background: linear-gradient(135deg,rgba(147,51,234,0.18),rgba(192,38,211,0.14));
+  border: 1px solid rgba(192,132,252,0.35); border-radius: 20px;
+  color: var(--accent1); font-family: var(--font); font-size: 0.82rem; font-weight: 700;
+  text-decoration: none; transition: all var(--t); white-space: nowrap;
+  display: flex; align-items: center; gap: 6px;
+}
+.btn-dashboard:hover { background: linear-gradient(135deg,rgba(147,51,234,0.32),rgba(192,38,211,0.26)); box-shadow: 0 0 18px rgba(147,51,234,0.3); transform: translateY(-1px); }
 
 /* SYNC STATUS (header badge) */
 .sync-status { font-size: 0.72rem; font-weight: 600; padding: 5px 12px; border-radius: 20px;

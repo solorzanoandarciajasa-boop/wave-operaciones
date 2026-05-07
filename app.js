@@ -19,9 +19,10 @@ const COORDS = {
   ampliacion:   { label: 'COORD AMPLIACIÓN (INFRAESTRUCTURA)',   name: 'José Marval',     emoji: '🏗️', cssClass: 'coord-ampliacion'    },
   construccion: { label: 'COORD CONSTRUCCIÓN',                   name: 'Francisco Silva', emoji: '🦺', cssClass: 'coord-construccion'  },
   instalaciones:{ label: 'COORD INSTALACIONES / SOPORTE PIMES', name: 'Miguel Rojas',    emoji: '📡', cssClass: 'coord-instalaciones' },
-  servicios:    { label: 'COORD SERVICIOS GENERALES',            name: 'Roberto Gómez',   emoji: '⚙️', cssClass: 'coord-servicios'     }
+  servicios:    { label: 'COORD SERVICIOS GENERALES',            name: 'Roberto Gómez',   emoji: '⚙️', cssClass: 'coord-servicios'     },
+  gps:          { label: 'COORD GPS',                            name: 'Carlos Méndez',   emoji: '📍', cssClass: 'coord-gps'           }
 };
-const COORD_ORDER = ['soporte','ampliacion','construccion','instalaciones','servicios'];
+const COORD_ORDER = ['soporte','ampliacion','construccion','instalaciones','servicios','gps'];
 
 const MODE_INFO = {
   agenda:  '📋 <strong>AGENDA</strong> — Registra los casos y actividades planificadas para el día siguiente por cada coordinación.',

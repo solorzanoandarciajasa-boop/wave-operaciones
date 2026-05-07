@@ -51,7 +51,7 @@
       <button class="c-mode-btn"        id="cBtnReporte" onclick="cSetMode('reporte')">📊 Reporte</button>
     </div>
 
-    <div class="c-mode-hint" id="cModeHint"></div>
+    <div class="c-tip">💡 Puedes completar la <strong>Agenda</strong> y el <strong>Reporte</strong> antes de enviar. La información no se pierde al cambiar de tab.</div>
 
     <!-- AGENDA FIELDS -->
     <div id="cAgendaFields">
@@ -83,6 +83,8 @@
       </div>
       <div id="cFilePreview" class="c-file-grid"></div>
     </div>
+
+    <div id="cSendHint" class="c-send-hint">Completa al menos un campo</div>
 
     <!-- SEND BUTTON -->
     <button class="c-btn-send" id="cBtnSend" onclick="cEnviar()">

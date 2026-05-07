@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WAVE · Dashboard Operacional</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="supabase-config.js"></script>
+  <style>
+    :root {
+      --bg:#0D0818; --card:#130A22; --card2:#1A1030; --input:#0A0614;
+      --border:rgba(192,132,252,0.13); --border-h:rgba(192,132,252,0.38);
+      --a1:#C084FC; --a2:#9333EA; --mg:#C026D3;
+      --ok:#00E676; --warn:#FFB300; --err:#FF5252;
+      --txt:#F0E8FF; --txt2:#9B7CC0; --txt3:#4A3568;
+      --shadow:0 0 30px rgba(147,51,234,0.2);
+      --font:'Inter',sans-serif; --mono:'JetBrains Mono',monospace;
+      --r:14px; --r2:8px; --t:0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh}
+
+    /* HEADER */
+    .header{position:sticky;top:0;z-index:100;background:rgba(13,8,24,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 2rem}
+    .header-inner{max-width:1400px;margin:0 auto;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .logo{display:flex;align-items:center;gap:12px}
+    .brand{font-size:1.4rem;font-weight:800;background:linear-gradient(90deg,#C084FC,#C026D3);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:2px}
+    .brand-sub{font-size:0.65rem;color:var(--txt2);font-weight:500;letter-spacing:1.5px;text-transform:uppercase}
+    .header-right{display:flex;align-items:center;gap:12px}
+    .btn-back{padding:6px 16px;background:rgba(147,51,234,0.12);border:1px solid rgba(192,132,252,0.3);border-radius:20px;color:var(--a1);font-family:var(--font);font-size:0.82rem;font-weight:700;text-decoration:none;transition:all var(--t)}
+    .btn-back:hover{background:rgba(147,51,234,0.24)}
+    .date-badge{font-size:0.78rem;color:var(--txt2);padding:5px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:20px}
+    .conn-dot{font-size:0.72rem;padding:5px 12px;border-radius:20px;background:rgba(147,51,234,0.1);border:1px solid var(--border);color:var(--txt2);transition:all var(--t)}
+    .conn-dot.ok{color:var(--ok);background:rgba(0,230,118,0.1);border-color:rgba(0,230,118,0.25)}
+
+    /* LAYOUT */
+    .page{max-width:1400px;margin:0 auto;padding:2rem}
+
+    /* SUMMARY STRIP */
+    .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:2rem}
+    @media(max-width:768px){.summary{grid-template-columns:repeat(2,1fr)}}
+    .s-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem 1.5rem;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow)}
+    .s-label{font-size:0.72rem;font-weight:700;color:var(--txt2);text-transform:uppercase;letter-spacing:1px}
+    .s-value{font-size:2rem;font-weight:800;color:var(--a1);font-family:var(--mono)}
+    .s-sub{font-size:0.75rem;color:var(--txt3)}
+
+    /* SECTION TITLE */
+    .sec-title{font-size:0.9rem;font-weight:700;color:var(--a1);text-transform:uppercase;letter-spacing:1px;margin-bottom:1rem;display:flex;align-items:center;gap:8px}
+
+    /* DATE FILTER */
+    .filter-row{display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;flex-wrap:wrap}
+    .date-input{padding:9px 14px;background:var(--input);border:1px solid var(--border);border-radius:var(--r2);color:var(--txt);font-family:var(--font);font-size:0.88rem;outline:none;transition:all var(--t);color-scheme:dark}
+    .date-input:focus{border-color:var(--a1)}
+    .btn-filter{padding:9px 20px;background:linear-gradient(135deg,#9333EA,#6B21A8);border:none;border-radius:var(--r2);color:#fff;font-family:var(--font);font-size:0.88rem;font-weight:700;cursor:pointer;transition:all var(--t)}
+    .btn-filter:hover{transform:translateY(-1px);box-shadow:0 4px 18px rgba(147,51,234,0.4)}
+    .btn-today{padding:9px 16px;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.25);border-radius:var(--r2);color:var(--ok);font-family:var(--font);font-size:0.82rem;font-weight:600;cursor:pointer;transition:all var(--t)}
+    .btn-today:hover{background:rgba(0,230,118,0.2)}
+
+    /* COORDINATOR GRID */
+    .coord-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.25rem;margin-bottom:2rem}
+    @media(max-width:900px){.coord-grid{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:560px){.coord-grid{grid-template-columns:1fr}}
+
+    .coord-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;box-shadow:var(--shadow);transition:border-color var(--t);animation:fadeIn 0.4s ease}
+    .coord-card:hover{border-color:var(--border-h)}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+    .cc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .cc-name{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:3px 10px;border-radius:20px}
+    .cc-status{font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:10px}
+    .status-active{background:rgba(0,230,118,0.15);color:var(--ok);border:1px solid rgba(0,230,118,0.3)}
+    .status-inactive{background:rgba(255,82,82,0.12);color:var(--err);border:1px solid rgba(255,82,82,0.25)}
+    .status-partial{background:rgba(255,179,0,0.12);color:var(--warn);border:1px solid rgba(255,179,0,0.25)}
+
+    .cc-person{font-size:0.95rem;font-weight:700;color:var(--txt);margin-bottom:12px}
+    .cc-emoji{font-size:1.6rem;margin-bottom:4px}
+
+    .cc-stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+    .cc-stat{background:var(--card2);border:1px solid var(--border);border-radius:var(--r2);padding:10px;text-align:center}
+    .cc-stat-val{font-size:1.4rem;font-weight:800;font-family:var(--mono)}
+    .cc-stat-lbl{font-size:0.65rem;color:var(--txt2);text-transform:uppercase;letter-spacing:0.6px;margin-top:2px}
+    .val-agenda{color:#00E676} .val-reporte{color:var(--a1)}
+
+    .cc-bar-wrap{margin-bottom:10px}
+    .cc-bar-label{display:flex;justify-content:space-between;font-size:0.7rem;color:var(--txt2);margin-bottom:4px}
+    .cc-bar{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+    .cc-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--a2),var(--mg));transition:width 0.8s ease}
+
+    .cc-last{font-size:0.72rem;color:var(--txt3);display:flex;align-items:center;gap:5px}
+    .cc-thumbs{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}
+    .cc-thumb{width:44px;height:33px;object-fit:cover;border-radius:4px;border:1px solid var(--border);cursor:pointer;transition:transform var(--t)}
+    .cc-thumb:hover{transform:scale(1.1);border-color:var(--a1)}
+
+    /* ACTIVITY TIMELINE */
+    .timeline{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;box-shadow:var(--shadow)}
+    .tl-item{display:flex;gap:14px;padding:10px 0;border-bottom:1px solid var(--border)}
+    .tl-item:last-child{border-bottom:none}
+    .tl-dot{width:10px;height:10px;border-radius:50%;margin-top:4px;flex-shrink:0}
+    .tl-dot-agenda{background:var(--ok)}
+    .tl-dot-reporte{background:var(--a1)}
+    .tl-body{flex:1}
+    .tl-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px}
+    .tl-coord{font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.6px}
+    .tl-mode{font-size:0.65rem;padding:1px 7px;border-radius:8px}
+    .tl-mode-agenda{background:rgba(0,230,118,0.12);color:var(--ok);border:1px solid rgba(0,230,118,0.2)}
+    .tl-mode-reporte{background:rgba(192,132,252,0.12);color:var(--a1);border:1px solid rgba(192,132,252,0.2)}
+    .tl-time{font-size:0.68rem;color:var(--txt3);margin-left:auto}
+    .tl-text{font-size:0.8rem;color:var(--txt2);line-height:1.4;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+    .tl-empty{text-align:center;padding:2rem;font-size:0.85rem;color:var(--txt3)}
+
+    /* LIGHTBOX */
+    .lightbox{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;cursor:zoom-out}
+    .lightbox img{max-width:90vw;max-height:88vh;border-radius:10px;box-shadow:0 10px 50px rgba(0,0,0,0.8);display:block}
+    .lb-close{position:fixed;top:16px;right:16px;width:32px;height:32px;background:var(--err);border:none;border-radius:50%;color:#fff;font-size:0.9rem;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .hidden{display:none!important}
+    .loading{text-align:center;padding:3rem;color:var(--txt2);font-size:0.9rem}
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <svg width="36" height="30" viewBox="0 0 44 38" fill="none">
+          <defs><linearGradient id="dg" x1="0" y1="0" x2="44" y2="38" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#5B21B6"/><stop offset="55%" stop-color="#9333EA"/><stop offset="100%" stop-color="#C026D3"/>
+          </linearGradient></defs>
+          <ellipse cx="11" cy="13" rx="8" ry="12.5" fill="#5B21B6" transform="rotate(-12 11 13)"/>
+          <circle cx="34" cy="11" r="9.5" fill="#C026D3"/>
+          <path d="M5 37 Q13 13 22 26 Q31 13 39 23" stroke="url(#dg)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+        <div>
+          <div class="brand">WAVE</div>
+          <div style="font-size:0.6rem;color:var(--txt2);letter-spacing:1.5px;text-transform:uppercase">Dashboard Operacional</div>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="date-badge" id="hDate"></div>
+        <div class="conn-dot" id="connDot">⚡ Conectando...</div>
+        <a href="index.html" class="btn-back">← Panel Central</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="page">
+
+    <!-- FILTER -->
+    <div class="filter-row">
+      <input type="date" id="filterDate" class="date-input"/>
+      <button class="btn-filter" onclick="loadDashboard()">🔍 Ver fecha</button>
+      <button class="btn-today" onclick="setToday()">📅 Hoy</button>
+    </div>
+
+    <!-- SUMMARY STRIP -->
+    <div class="summary">
+      <div class="s-card">
+        <div class="s-label">Total envíos</div>
+        <div class="s-value" id="sTotal">—</div>
+        <div class="s-sub">del día seleccionado</div>
+      </div>
+      <div class="s-card">
+        <div class="s-label">Coordinaciones activas</div>
+        <div class="s-value" id="sActivas" style="color:var(--ok)">—</div>
+        <div class="s-sub">enviaron hoy</div>
+      </div>
+      <div class="s-card">
+        <div class="s-label">Agendas registradas</div>
+        <div class="s-value" id="sAgendas" style="color:#00E676">—</div>
+        <div class="s-sub">planificación del día</div>
+      </div>
+      <div class="s-card">
+        <div class="s-label">Reportes registrados</div>
+        <div class="s-value" id="sReportes">—</div>
+        <div class="s-sub">cierre operacional</div>
+      </div>
+    </div>
+
+    <!-- COORD CARDS -->
+    <div class="sec-title">📡 Estado por Coordinación</div>
+    <div class="coord-grid" id="coordGrid">
+      <div class="loading">⏳ Cargando datos...</div>
+    </div>
+
+    <!-- ACTIVITY TIMELINE -->
+    <div class="sec-title">🕐 Línea de Actividad</div>
+    <div class="timeline" id="timeline">
+      <div class="tl-empty">Selecciona una fecha y carga el dashboard.</div>
+    </div>
+
+  </div>
+
+  <!-- LIGHTBOX -->
+  <div id="lightbox" class="lightbox hidden" onclick="closeLb()">
+    <img id="lbImg" src="" alt=""/>
+    <button class="lb-close" onclick="closeLb()">✕</button>
+  </div>
+
+  <script>
+  const COORDS = {
+    soporte:      { label:'COORD SOPORTE NIVEL 1',              name:'Alejandro Gómez',  emoji:'🔧', css:'coord-soporte'      },
+    ampliacion:   { label:'COORD AMPLIACIÓN (INFRAESTRUCTURA)', name:'José Marval',      emoji:'🏗️', css:'coord-ampliacion'   },
+    construccion: { label:'COORD CONSTRUCCIÓN',                 name:'Francisco Silva',  emoji:'🦺', css:'coord-construccion' },
+    instalaciones:{ label:'COORD INSTALACIONES / PIMES',        name:'Miguel Rojas',     emoji:'📡', css:'coord-instalaciones'},
+    servicios:    { label:'COORD SERVICIOS GENERALES',          name:'Roberto Gómez',    emoji:'⚙️', css:'coord-servicios'    },
+    gps:          { label:'COORD GPS',                          name:'Carlos Méndez',    emoji:'📍', css:'coord-gps'          }
+  };
+  const COORD_CSS = {
+    soporte:'background:rgba(99,179,237,0.12);color:#63B3ED;border:1px solid rgba(99,179,237,0.3)',
+    ampliacion:'background:rgba(192,132,252,0.14);color:#C084FC;border:1px solid rgba(192,132,252,0.35)',
+    construccion:'background:rgba(255,179,0,0.12);color:#FFB300;border:1px solid rgba(255,179,0,0.3)',
+    instalaciones:'background:rgba(0,230,118,0.12);color:#00E676;border:1px solid rgba(0,230,118,0.3)',
+    servicios:'background:rgba(249,115,122,0.12);color:#F9737A;border:1px solid rgba(249,115,122,0.3)',
+    gps:'background:rgba(56,189,248,0.12);color:#38BDF8;border:1px solid rgba(56,189,248,0.3)'
+  };
+
+  let db = null;
+  let currentDate = '';
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    setDateBadge();
+    setToday();
+    await initDB();
+    loadDashboard();
+  });
+
+  function setDateBadge() {
+    const DAYS=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const MONTHS=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const n = new Date();
+    document.getElementById('hDate').textContent =
+      `${DAYS[n.getDay()]} ${n.getDate()} ${MONTHS[n.getMonth()]} ${n.getFullYear()}`;
+  }
+
+  function setToday() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('filterDate').value = today;
+    loadDashboard();
+  }
+
+  async function initDB() {
+    try {
+      const { createClient } = supabase;
+      db = createClient(SUPABASE_URL, SUPABASE_ANON);
+      await db.from('envios').select('id').limit(1);
+      const dot = document.getElementById('connDot');
+      dot.textContent = '✅ Sincronizado'; dot.className = 'conn-dot ok';
+    } catch(e) { console.warn(e); }
+  }
+
+  async function loadDashboard() {
+    if (!db) { setTimeout(loadDashboard, 1000); return; }
+    const dateVal = document.getElementById('filterDate').value;
+    if (!dateVal) return;
+    currentDate = dateVal;
+
+    const { data, error } = await db.from('envios').select('*')
+      .eq('fecha', dateVal).order('enviado_en', { ascending: true });
+    if (error) { console.warn(error); return; }
+
+    renderSummary(data);
+    renderCoordCards(data, dateVal);
+    renderTimeline(data);
+  }
+
+  function renderSummary(data) {
+    const agendas  = data.filter(r => r.modo === 'agenda').length;
+    const reportes = data.filter(r => r.modo === 'reporte').length;
+    const activas  = new Set(data.map(r => r.coord_key)).size;
+    document.getElementById('sTotal').textContent   = data.length;
+    document.getElementById('sActivas').textContent = activas;
+    document.getElementById('sAgendas').textContent = agendas;
+    document.getElementById('sReportes').textContent= reportes;
+  }
+
+  function renderCoordCards(data, dateVal) {
+    const grid = document.getElementById('coordGrid');
+    const grouped = {};
+    data.forEach(r => { if (!grouped[r.coord_key]) grouped[r.coord_key] = []; grouped[r.coord_key].push(r); });
+
+    const DAYS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const MONTHS=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    const d = new Date(dateVal + 'T12:00:00');
+    const maxEnvios = Math.max(1, ...Object.values(grouped).map(r => r.length));
+
+    grid.innerHTML = Object.keys(COORDS).map(key => {
+      const coord   = COORDS[key];
+      const rows    = grouped[key] || [];
+      const agendas = rows.filter(r => r.modo === 'agenda');
+      const repots  = rows.filter(r => r.modo === 'reporte');
+      const hasA    = agendas.length > 0;
+      const hasR    = repots.length > 0;
+      const lastRow = rows[rows.length - 1];
+      const lastAt  = lastRow ? new Date(lastRow.enviado_en).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'}) : null;
+      const pct     = Math.round((rows.length / maxEnvios) * 100);
+
+      let statusCls, statusTxt;
+      if (!rows.length)       { statusCls='status-inactive'; statusTxt='⚪ Sin actividad'; }
+      else if (hasA && hasR)  { statusCls='status-active';   statusTxt='🟢 Completo'; }
+      else                    { statusCls='status-partial';   statusTxt='🟡 Parcial'; }
+
+      const allImages = rows.flatMap(r => (r.archivos||[]).filter(a=>a.esImagen&&a.preview));
+      const thumbs = allImages.slice(0,4).map(a =>
+        `<img src="${a.preview}" class="cc-thumb" onclick="openLb('${a.preview}')" title="${a.nombre}"/>`
+      ).join('');
+
+      return `<div class="coord-card">
+        <div class="cc-top">
+          <span class="cc-name" style="${COORD_CSS[key]};font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;padding:3px 10px;border-radius:20px">${coord.emoji} ${coord.label}</span>
+          <span class="cc-status ${statusCls}">${statusTxt}</span>
+        </div>
+        <div class="cc-emoji">${coord.emoji}</div>
+        <div class="cc-person">${coord.name}</div>
+        <div class="cc-stats">
+          <div class="cc-stat">
+            <div class="cc-stat-val val-agenda">${agendas.length}</div>
+            <div class="cc-stat-lbl">📋 Agendas</div>
+          </div>
+          <div class="cc-stat">
+            <div class="cc-stat-val val-reporte">${repots.length}</div>
+            <div class="cc-stat-lbl">📊 Reportes</div>
+          </div>
+        </div>
+        <div class="cc-bar-wrap">
+          <div class="cc-bar-label"><span>Actividad del día</span><span>${rows.length} envío(s)</span></div>
+          <div class="cc-bar"><div class="cc-bar-fill" style="width:${pct}%"></div></div>
+        </div>
+        <div class="cc-last">${lastAt ? `🕐 Último envío: <strong style="color:var(--txt)">${lastAt}</strong>` : '⚠️ Sin registros para esta fecha'}</div>
+        ${thumbs ? `<div class="cc-thumbs">${thumbs}</div>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  function renderTimeline(data) {
+    const tl = document.getElementById('timeline');
+    if (!data.length) { tl.innerHTML = '<div class="tl-empty">📭 Sin actividad para esta fecha.</div>'; return; }
+
+    tl.innerHTML = [...data].reverse().map(row => {
+      const coord = COORDS[row.coord_key] || { label: row.coord_key, emoji:'📌' };
+      const time  = new Date(row.enviado_en).toLocaleTimeString('es-VE',{hour:'2-digit',minute:'2-digit'});
+      const text  = row.modo === 'agenda' ? row.casos : (row.exito || row.pendiente) || '';
+      return `<div class="tl-item">
+        <div class="tl-dot tl-dot-${row.modo}"></div>
+        <div class="tl-body">
+          <div class="tl-head">
+            <span class="tl-coord" style="${COORD_CSS[row.coord_key] || ''};font-size:0.68rem;padding:2px 8px;border-radius:8px">${coord.emoji} ${coord.label}</span>
+            <span class="tl-mode tl-mode-${row.modo}">${row.modo === 'agenda' ? '📋 AGENDA' : '📊 REPORTE'}</span>
+            <span class="tl-time">🕐 ${time}</span>
+          </div>
+          <div class="tl-text">${escHtml(text || '').slice(0,120)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  function openLb(src){ document.getElementById('lbImg').src=src; document.getElementById('lightbox').classList.remove('hidden'); }
+  function closeLb(){ document.getElementById('lightbox').classList.add('hidden'); document.getElementById('lbImg').src=''; }
+  </script>
+</body>
+</html>
